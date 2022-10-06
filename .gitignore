@@ -1,3 +1,4 @@
 /.idea/
 *.opml
 *.opml.xml
+/opml-to-spotify
