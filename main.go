@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	client := spotify.New(login())
+	client := spotify.New(login(clientID))
 
 	fmt.Printf("Searching for %d shows", len(outlines))
 
@@ -56,14 +56,13 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 }
 
 // login
-func login() *http.Client {
+func login(clientID string) *http.Client {
 	s := http.Server{
 		Addr: "localhost:8080",
 	}
 
 	state := uuid.New().String()
 
-	clientID := os.Getenv("SPOTIFY_ID")
 	auth := spotifyauth.New(
 		spotifyauth.WithClientID(clientID),
 		spotifyauth.WithScopes(spotifyauth.ScopeUserLibraryModify),
