@@ -12,7 +12,8 @@
 * [Create an application on Spotify](https://developer.spotify.com/dashboard/applications)
   * Obtain the Client ID and Secret
 * Download the binary for your OS from the latest release on the [releases](https://github.com/elliotwms/opml-to-spotify/releases) page
-* Run the following, specifying the client ID as `SPOTIFY_ID` and the filename
+* Run the following, specifying the client ID, client secret and the filename
+  * Client ID and Secret can be provided with either flags (`-c id -s secret`) or environment variables (`SPOTIFY_ID` and `SPOTIFY_SECRET`)
 ```shell
-$ ./opml-to-spotify import -h
+$ ./opml-to-spotify import {filename}.opml
 ```

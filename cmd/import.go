@@ -49,11 +49,7 @@ func run(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	client := spotify.New(login(
-		cmd,
-		cmd.Flag(flagClientID).Value.String(),
-		cmd.Flag(flagClientSecret).Value.String(),
-	))
+	client := spotify.New(login(cmd))
 
 	cmd.Printf("Searching for %d shows", len(outlines))
 
@@ -84,8 +80,11 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 	return outlines, nil
 }
 
-// login
-func login(cmd *cobra.Command, clientID, secret string) *http.Client {
+// login logs the user into the application via OAuth authorization code flow
+// https://developer.spotify.com/documentation/general/guides/authorization/code-flow/
+// The user will be presented with a Spotify Login URL via the terminal which they should visit, then be redirected to a
+// locally hosted http server which captures the auth code and performs token exchange
+func login(cmd *cobra.Command) *http.Client {
 	s := http.Server{
 		Addr: "localhost:8080",
 	}
@@ -97,11 +96,11 @@ func login(cmd *cobra.Command, clientID, secret string) *http.Client {
 		spotifyauth.WithRedirectURL("http://localhost:8080/callback"),
 	}
 
-	if clientID != "" {
-		opts = append(opts, spotifyauth.WithClientID(clientID))
+	if v := cmd.Flag(flagClientID).Value.String(); v != "" {
+		opts = append(opts, spotifyauth.WithClientID(v))
 	}
-	if secret != "" {
-		opts = append(opts, spotifyauth.WithClientSecret(secret))
+	if v := cmd.Flag(flagClientSecret).Value.String(); v != "" {
+		opts = append(opts, spotifyauth.WithClientSecret(v))
 	}
 
 	auth := spotifyauth.New(opts...)
