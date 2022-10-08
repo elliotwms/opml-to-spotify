@@ -21,7 +21,14 @@ const flagDryRun = "dry-run"
 var importCmd = &cobra.Command{
 	Use:   "import filename.opml",
 	Short: "Import your current podcast library into Spotify, using an OPML file",
-	Run:   run,
+	Long: `Import your current podcast library into Spotify, using an OPML file.
+
+* Export your podcast library out of your old podcast app as an OPML file
+* Create an application on Spotify: https://developer.spotify.com/dashboard/applications
+* Run the command specifying your application's Client ID and Secret as either flags 
+(--client-id and --client-secret) or environment variables (SPOTIFY_ID and SPOTIFY_SECRET)
+`,
+	Run: run,
 }
 
 func init() {
