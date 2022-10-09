@@ -133,6 +133,8 @@ func login(cmd *cobra.Command) *http.Client {
 		}
 
 		tokenChan <- token
+
+		_, _ = writer.Write([]byte("Token retrieved successfully. Please return to your terminal"))
 	})
 
 	go func() {
