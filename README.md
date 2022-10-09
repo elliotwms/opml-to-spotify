@@ -8,12 +8,20 @@
 
 ## Usage
 
+> :warning: until `opml-to-spotify` is approved by Spotify you will need to follow the additional instructions for [using your own application](#Using-your-own-application) below 
+
 * Export your podcast library out of your old podcast app as an OPML (`.opml`) file
-* [Create an application on Spotify](https://developer.spotify.com/dashboard/applications)
-  * Obtain the Client ID and Secret
 * Download the binary for your OS from the latest release on the [releases](https://github.com/elliotwms/opml-to-spotify/releases) page
-* Run the following, specifying the client ID, client secret and the filename
-  * Client ID and Secret can be provided with either flags (`-c id -s secret`) or environment variables (`SPOTIFY_ID` and `SPOTIFY_SECRET`)
+* Run the following:
 ```shell
 $ ./opml-to-spotify import {filename}.opml
 ```
+
+### Using your own application
+
+During local development, and until the official `opml-to-spotify` application is approved, it will be necessary for you to use your own Spotify developer application to call the spotify API 
+
+* [Create an application on Spotify](https://developer.spotify.com/dashboard/applications)
+  * Obtain the Client ID
+  * Add a redirect URI for `http://localhost:8080/callback`
+* When running the application, specify the client ID ith either flags (`-c {id}`) or environment variables (`SPOTIFY_ID`)
