@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   test:
-    uses: elliotwms/opml-to-spotify/.github/workflows/test.yml@master
+    uses: elliotwms/opml-to-spotify/.github/workflows/test.yml@main
   release:
     name: Create Release
     runs-on: ubuntu-latest
