@@ -9,6 +9,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    needs: test
     outputs:
       tag: ${{ steps.changelog.outputs.tag }}
     steps:
