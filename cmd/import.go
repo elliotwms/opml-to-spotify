@@ -19,6 +19,8 @@ import (
 const flagClientID = "client-id"
 const flagDryRun = "dry-run"
 
+const maxSaveShowsBatchSize = 50
+
 var (
 	// importCmd represents the import command
 	importCmd = &cobra.Command{
@@ -63,7 +65,7 @@ func run(cmd *cobra.Command, args []string) {
 	cmd.Printf("Searching for %d shows", len(outlines))
 
 	ctx := context.Background()
-	shows, err := search(ctx, client, outlines)
+	shows, err := searchSpotifyForOutlines(ctx, client, outlines)
 	if err != nil {
 		panic(err)
 	}
@@ -75,8 +77,16 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err = client.SaveShowsForCurrentUser(ctx, shows); err != nil {
-		panic(err)
+	// save shows for current user in batches of maxSaveShowsBatchSize
+	for i := 0; i < len(shows); i += maxSaveShowsBatchSize {
+		j := i + maxSaveShowsBatchSize
+		if j > len(shows) {
+			j = len(shows)
+		}
+
+		if err = client.SaveShowsForCurrentUser(ctx, shows[i:j]); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -152,9 +162,9 @@ func login(cmd *cobra.Command) *http.Client {
 	return auth.Client(context.Background(), <-tokenChan)
 }
 
-// search the Spotify API for each of the shows specified in the opml outlines by name, returning the first match of
-// each
-func search(ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
+// searchSpotifyForOutlines searches the Spotify API for each of the shows specified in the opml outlines by name,
+// returning the first match of each
+func searchSpotifyForOutlines(ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
 	var shows []spotify.ID
 
 	for _, o := range outlines {
