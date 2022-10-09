@@ -14,8 +14,6 @@ func TestNewVerifier(t *testing.T) {
 		t.Run(fmt.Sprintf("Len%d", i), func(t *testing.T) {
 			v := NewVerifier(i)
 
-			t.Logf("Verifying %s", v)
-
 			if len(v) != i {
 				t.Fatalf("unexpected verifier length: %d", len(v))
 			}

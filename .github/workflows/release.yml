@@ -54,4 +54,4 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           release_tag: ${{ needs.release.outputs.tag }}
-          ldflags: "-X 'github.com/elliotwms/opml-to-spotify/cmd.clientID='${{ secrets.SPOTIFY_ID }}'"
+          ldflags: -X 'github.com/elliotwms/opml-to-spotify/cmd.clientID=${{ secrets.SPOTIFY_ID }}'
