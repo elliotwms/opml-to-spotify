@@ -3,14 +3,16 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/elliotwms/opml-to-spotify/pkg/pkce"
 	"github.com/gilliek/go-opml/opml"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/zmb3/spotify/v2"
 	"github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2"
-	"log"
-	"net/http"
 )
 
 const flagClientID = "client-id"
@@ -85,6 +87,8 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 // The user will be presented with a Spotify Login URL via the terminal which they should visit, then be redirected to a
 // locally hosted http server which captures the auth code and performs token exchange
 func login(cmd *cobra.Command) *http.Client {
+	verifier := pkce.NewVerifier(pkce.LenMax)
+
 	s := http.Server{
 		Addr: "localhost:8080",
 	}
@@ -107,7 +111,8 @@ func login(cmd *cobra.Command) *http.Client {
 
 	tokenChan := make(chan *oauth2.Token, 1)
 	http.HandleFunc("/callback", func(writer http.ResponseWriter, request *http.Request) {
-		token, err := auth.Token(context.Background(), state, request)
+		token, err := auth.Token(context.Background(), state, request, verifier.Params()...)
+
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -122,7 +127,10 @@ func login(cmd *cobra.Command) *http.Client {
 		}
 	}()
 
-	cmd.Printf("Click here to log in: %s\nWaiting for token...", auth.AuthURL(state))
+	challenge := verifier.Challenge()
+	url := auth.AuthURL(state, challenge.Params()...)
+
+	cmd.Printf("Visit this URL in your browser to log in: %s\n", url)
 
 	return auth.Client(context.Background(), <-tokenChan)
 }
