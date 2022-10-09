@@ -4,11 +4,6 @@ on:
   pull_request:
     branches: [ main ]
   workflow_call:
-    secrets:
-      TOKEN:
-        required: true
-      APPLICATION_ID:
-        required: true
 
 jobs:
   test:

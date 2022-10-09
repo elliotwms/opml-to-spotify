@@ -5,10 +5,11 @@ on:
       - main
 jobs:
   test:
-    uses: elliotwms/pinbot/.github/workflows/test.yml@master
+    uses: elliotwms/opml-to-spotify/.github/workflows/test.yml@main
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    needs: test
     outputs:
       tag: ${{ steps.changelog.outputs.tag }}
     steps:
