@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"os"
 	"time"
 
@@ -29,28 +30,38 @@ func init() {
 func runExport(cmd *cobra.Command, _ []string) {
 	var outlines []opml.Outline
 
-	// todo paginate
 	client := clients.GetSpotify(cmd)
-	shows, err := client.CurrentUsersShows(context.Background())
+	ctx := context.Background()
+	shows, err := client.CurrentUsersShows(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	cmd.Printf("Got %d shows\n", len(shows.Shows))
+	for {
+		cmd.Printf("Got %d shows\n", len(shows.Shows))
 
-	for _, show := range shows.Shows {
-		cmd.Println("Searching for", show.Name)
+		for _, show := range shows.Shows {
+			cmd.Println("Searching for", show.Name)
 
-		entry := searchiTunesForMatch(cmd, show)
-		if entry == nil {
-			cmd.Println("Could not match show:", show.Name)
-			continue
+			entry := searchiTunesForMatch(cmd, show)
+			if entry == nil {
+				cmd.Println("Could not match show:", show.Name)
+				continue
+			}
+
+			outlines = append(outlines, buildOutline(show, entry))
 		}
 
-		outlines = append(outlines, buildOutline(show, entry))
-	}
+		cmd.Printf("Matched %d outlines\n", len(outlines))
 
-	cmd.Printf("Matched %d outlines\n", len(outlines))
+		if err := client.NextPage(ctx, shows); err != nil {
+			if errors.Is(err, spotify.ErrNoMorePages) {
+				break
+			} else {
+				panic(err)
+			}
+		}
+	}
 
 	// build OPML
 	bs, err := xml.Marshal(buildOPML(outlines))
