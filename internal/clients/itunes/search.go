@@ -1,3 +1,4 @@
+// Package itunes is a really small package which sort of does one thing: search for podcasts in the iTunes Search API
 package itunes
 
 import (
@@ -13,13 +14,24 @@ type Results struct {
 
 type Entry struct {
 	TrackName string `json:"trackName"`
-
-	FeedURL string `json:"feedURL"`
+	FeedURL   string `json:"feedURL"`
 }
 
-func Search(title, country string) ([]Entry, error) {
-	//GET https://itunes.apple.com/search?term=Radiolab&media=podcast&entity=podcast&attribute=titleTerm
-	u, err := url.Parse("https://itunes.apple.com/search?media=podcast&entity=podcast&attribute=titleTerm")
+type Client struct {
+	HTTPClient *http.Client
+	BaseURL    string
+}
+
+func New() *Client {
+	return &Client{
+		HTTPClient: http.DefaultClient,
+		BaseURL:    "https://itunes.apple.com",
+	}
+}
+
+// Search searches the iTunes Search API for podcasts matching the title and country specified in the params
+func (c *Client) Search(title, country string) ([]Entry, error) {
+	u, err := url.Parse(c.BaseURL + "/search?media=podcast&entity=podcast&attribute=titleTerm")
 	if err != nil {
 		return nil, err
 	}

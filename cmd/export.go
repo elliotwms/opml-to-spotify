@@ -76,7 +76,7 @@ func runExport(cmd *cobra.Command, _ []string) {
 }
 
 func searchiTunesForMatch(cmd *cobra.Command, show spotify.SavedShow) *itunes.Entry {
-	results, err := itunes.Search(show.Name, show.AvailableMarkets[0])
+	results, err := clients.GetiTunesClient().Search(show.Name, show.AvailableMarkets[0])
 	if err != nil {
 		panic(err)
 	}
