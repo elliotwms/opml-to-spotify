@@ -3,15 +3,23 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/elliotwms/opml-to-spotify/internal/clients"
 	"github.com/elliotwms/opml-to-spotify/internal/clients/itunes"
 	"github.com/zmb3/spotify/v2"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestExport(t *testing.T) {
+	_ = os.Remove("spotify.opml")
+	t.Cleanup(func() {
+		_ = os.Remove("spotify.opml")
+	})
+
 	buf := new(bytes.Buffer)
 	exportCmd.SetOut(buf)
 
@@ -33,7 +41,7 @@ func TestExport(t *testing.T) {
 			_, _ = w.Write(bs)
 		},
 	})
-	defer s.Close()
+	t.Cleanup(s.Close)
 
 	var s2 *httptest.Server
 	clients.ITunes, s2 = testiTunesClient(map[string]http.HandlerFunc{
@@ -51,7 +59,17 @@ func TestExport(t *testing.T) {
 			_, _ = w.Write(bs)
 		},
 	})
-	defer s2.Close()
+	t.Cleanup(s2.Close)
 
+	// run the command
 	exportCmd.Run(exportCmd, nil)
+
+	bs, err := os.ReadFile("spotify.opml")
+	if err != nil {
+		t.Fatal("did not create spotify.opml file")
+	}
+
+	if !strings.Contains(string(bs), "Hello, World!") {
+		t.Fatal("Output OPML file did not contain expected show")
+	}
 }
