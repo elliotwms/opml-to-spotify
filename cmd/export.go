@@ -10,6 +10,7 @@ import (
 	"github.com/elliotwms/opml-to-spotify/internal/clients/itunes"
 	"github.com/gilliek/go-opml/opml"
 	"github.com/spf13/cobra"
+	"github.com/zmb3/spotify/v2"
 )
 
 var exportCmd = &cobra.Command{
@@ -26,44 +27,30 @@ func init() {
 }
 
 func runExport(cmd *cobra.Command, _ []string) {
-	client := clients.GetSpotify(cmd)
+	var outlines []opml.Outline
 
 	// todo paginate
+	client := clients.GetSpotify(cmd)
 	shows, err := client.CurrentUsersShows(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
-	cmd.Printf("Got %d shows", len(shows.Shows))
-
-	var outlines []opml.Outline
+	cmd.Printf("Got %d shows\n", len(shows.Shows))
 
 	for _, show := range shows.Shows {
-		results, err := itunes.Search(show.Name, show.AvailableMarkets[0])
-		if err != nil {
-			panic(err)
+		cmd.Println("Searching for", show.Name)
+
+		entry := searchiTunesForMatch(cmd, show)
+		if entry == nil {
+			cmd.Println("Could not match show:", show.Name)
+			continue
 		}
 
-		cmd.Printf("Found %d matches", len(results))
-
-		for _, result := range results {
-			// Exact matches on title only
-			// Yes I know this is a terrible system
-			if result.TrackName != show.Name {
-				continue
-			}
-
-			outlines = append(outlines, opml.Outline{
-				Type:    "rss",
-				Text:    show.Name,
-				Title:   show.Name,
-				XMLURL:  results[0].FeedURL,
-				HTMLURL: show.ExternalURLs["spotify"],
-			})
-		}
-
-		break
+		outlines = append(outlines, buildOutline(show, entry))
 	}
+
+	cmd.Printf("Matched %d outlines\n", len(outlines))
 
 	// build OPML
 	bs, err := xml.Marshal(buildOPML(outlines))
@@ -74,6 +61,35 @@ func runExport(cmd *cobra.Command, _ []string) {
 	err = os.WriteFile(cmd.Flag("file").Value.String(), bs, 0644)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func searchiTunesForMatch(cmd *cobra.Command, show spotify.SavedShow) *itunes.Entry {
+	results, err := itunes.Search(show.Name, show.AvailableMarkets[0])
+	if err != nil {
+		panic(err)
+	}
+
+	cmd.Printf("Found %d matches\n", len(results))
+
+	for _, result := range results {
+		// Exact matches on title only
+		// Yes I know this is a terrible system - PRs welcome
+		if result.TrackName == show.Name {
+			return &result
+		}
+	}
+
+	return nil
+}
+
+func buildOutline(show spotify.SavedShow, entry *itunes.Entry) opml.Outline {
+	return opml.Outline{
+		Type:    "rss",
+		Text:    show.Name,
+		Title:   show.Name,
+		XMLURL:  entry.FeedURL,
+		HTMLURL: show.ExternalURLs["spotify"],
 	}
 }
 
