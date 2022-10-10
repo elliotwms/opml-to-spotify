@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/elliotwms/opml-to-spotify/internal/clients"
 
 	"github.com/gilliek/go-opml/opml"
 	"github.com/spf13/cobra"
@@ -27,9 +28,6 @@ var (
 `,
 		Run: run,
 	}
-
-	// clientID is the opml-to-spotify Spotify application Client ID, see setClientID
-	clientID string
 )
 
 func init() {
@@ -39,8 +37,6 @@ func init() {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	setClientID(cmd)
-
 	if len(args) < 1 {
 		panic("missing argument: filename")
 	}
@@ -50,7 +46,7 @@ func run(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	client := login(cmd)
+	client := clients.GetSpotify(cmd)
 
 	cmd.Printf("Searching for %d shows", len(outlines))
 

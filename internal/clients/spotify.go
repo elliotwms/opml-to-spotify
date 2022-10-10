@@ -1,32 +1,28 @@
-package cmd
+package clients
 
 import (
 	"context"
-	"log"
-	"net/http"
-	"os"
-
+	"github.com/elliotwms/opml-to-spotify/internal/config"
 	"github.com/elliotwms/opml-to-spotify/pkg/pkce"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2"
+	"log"
+	"net/http"
 )
 
-// setClientID sets the clientID var depending on priority from:
-// * initial value (empty but can be set by ldflags)
-// * SPOTIFY_ID environment variable
-// * client-id flag
-func setClientID(cmd *cobra.Command) {
-	if s := os.Getenv("SPOTIFY_ID"); s != "" {
-		clientID = s
+var Spotify *spotify.Client
+
+func GetSpotify(cmd *cobra.Command) *spotify.Client {
+	if Spotify != nil {
+		return Spotify
 	}
 
-	// allow overriding of client ID via flag
-	if s := cmd.Flag(flagClientID).Value.String(); s != "" {
-		clientID = s
-	}
+	Spotify = login(cmd)
+
+	return Spotify
 }
 
 // login logs the user into the application via OAuth authorization code flow
@@ -43,7 +39,7 @@ func login(cmd *cobra.Command) *spotify.Client {
 	state := uuid.New().String()
 
 	auth := spotifyauth.New(
-		spotifyauth.WithClientID(clientID),
+		spotifyauth.WithClientID(config.ClientID(cmd)),
 		spotifyauth.WithScopes(spotifyauth.ScopeUserLibraryRead, spotifyauth.ScopeUserLibraryModify),
 		spotifyauth.WithRedirectURL("http://localhost:8080/callback"),
 	)
@@ -71,7 +67,7 @@ func login(cmd *cobra.Command) *spotify.Client {
 	challenge := verifier.Challenge()
 	url := auth.AuthURL(state, challenge.Params()...)
 
-	cmd.Printf("Visit this URL in your browser to log in: %s\n", url)
+	cmd.Println("Visit this URL in your browser to log in:", url)
 
 	return spotify.New(auth.Client(context.Background(), <-tokenChan))
 }
