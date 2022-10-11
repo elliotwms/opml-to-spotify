@@ -25,18 +25,21 @@ func ImportTest(t *testing.T, f func()) {
 }
 
 func NewImportStage(t *testing.T) (*ImportStage, *ImportStage, *ImportStage) {
-	out := new(bytes.Buffer)
-	importCmd.SetOut(out)
+	out, err := new(bytes.Buffer), new(bytes.Buffer)
 
 	s := &ImportStage{
 		t:       t,
 		require: require.New(t),
 		cmd:     importCmd,
 		out:     out,
+		errOut:  err,
 
 		spotifyServer: setupMockSpotify(t),
 		itunesServer:  setupMockItunes(t),
 	}
+
+	importCmd.SetOut(out)
+	importCmd.SetErr(err)
 
 	return s, s, s
 }
@@ -45,11 +48,11 @@ type ImportStage struct {
 	t       *testing.T
 	require *require.Assertions
 	out     *bytes.Buffer
+	errOut  *bytes.Buffer
 	cmd     *cobra.Command
 
 	spotifyServer, itunesServer *http.ServeMux
-
-	savedShows []string
+	savedShows                  []string
 }
 
 func (s *ImportStage) and() *ImportStage {
@@ -82,6 +85,8 @@ func (s *ImportStage) an_opml_file() *ImportStage {
 
 func (s *ImportStage) the_command_is_run() {
 	s.cmd.Run(s.cmd, []string{"test.opml"})
+
+	s.t.Log(s.out.String())
 }
 
 func (s *ImportStage) spotify_will_return_search_results() *ImportStage {
@@ -113,6 +118,12 @@ func (s *ImportStage) spotify_will_all_the_user_to_save_the_shows() {
 	})
 }
 
-func (s *ImportStage) the_user_is_subscribed_to_the_show() {
+func (s *ImportStage) the_user_is_subscribed_to_the_show() *ImportStage {
 	s.require.NotEmpty(s.savedShows)
+
+	return s
+}
+
+func (s *ImportStage) no_errors_are_output() {
+	s.require.Empty(s.errOut)
 }

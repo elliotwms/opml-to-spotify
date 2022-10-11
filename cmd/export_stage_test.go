@@ -24,7 +24,7 @@ func ExportTest(t *testing.T, f func()) {
 }
 
 func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
-	out := new(bytes.Buffer)
+	out, err := new(bytes.Buffer), new(bytes.Buffer)
 	exportCmd.SetOut(out)
 
 	s := &ExportStage{
@@ -32,6 +32,7 @@ func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 		require:       require.New(t),
 		cmd:           exportCmd,
 		out:           out,
+		errOut:        err,
 		spotifyServer: setupMockSpotify(t),
 		itunesServer:  setupMockItunes(t),
 	}
@@ -43,6 +44,7 @@ type ExportStage struct {
 	t       *testing.T
 	require *require.Assertions
 	out     *bytes.Buffer
+	errOut  *bytes.Buffer
 	cmd     *cobra.Command
 
 	spotifyServer, itunesServer *http.ServeMux
@@ -53,6 +55,7 @@ type ExportStage struct {
 func (s *ExportStage) and() *ExportStage {
 	return s
 }
+
 func (s *ExportStage) spotify_will_return_one_show() *ExportStage {
 	s.spotifyServer.HandleFunc("/me/shows", func(w http.ResponseWriter, r *http.Request) {
 		bs, _ := json.Marshal(spotify.SavedShowPage{Shows: []spotify.SavedShow{
@@ -110,4 +113,8 @@ func (s *ExportStage) the_output_opml_file_contains_the_expected_show() {
 	}
 
 	s.require.Contains(string(s.opml), "Hello, World!")
+}
+
+func (s *ExportStage) no_errors_are_output() {
+	s.require.Empty(s.errOut)
 }

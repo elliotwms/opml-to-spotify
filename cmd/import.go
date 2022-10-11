@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"github.com/elliotwms/opml-to-spotify/internal/clients"
 
+	"github.com/elliotwms/opml-to-spotify/internal/clients"
 	"github.com/gilliek/go-opml/opml"
 	"github.com/spf13/cobra"
 	"github.com/zmb3/spotify/v2"
@@ -48,10 +47,10 @@ func run(cmd *cobra.Command, args []string) {
 
 	client := clients.GetSpotify(cmd)
 
-	cmd.Printf("Searching for %d shows", len(outlines))
+	cmd.Printf("Searching for %d shows\n", len(outlines))
 
 	ctx := context.Background()
-	shows, err := searchSpotifyForOutlines(ctx, client, outlines)
+	shows, err := searchSpotifyForOutlines(cmd, ctx, client, outlines)
 	if err != nil {
 		panic(err)
 	}
@@ -88,11 +87,11 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 
 // searchSpotifyForOutlines searches the Spotify API for each of the shows specified in the opml outlines by name,
 // returning the first match of each
-func searchSpotifyForOutlines(ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
+func searchSpotifyForOutlines(cmd *cobra.Command, ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
 	var shows []spotify.ID
 
 	for _, o := range outlines {
-		fmt.Printf("Searching for %s\n", o.Title)
+		cmd.Printf("Searching for %s\n", o.Title)
 		res, err := client.Search(ctx, o.Title, spotify.SearchTypeShow)
 		if err != nil {
 			return nil, err
@@ -101,7 +100,7 @@ func searchSpotifyForOutlines(ctx context.Context, client *spotify.Client, outli
 		s := findShow(res.Shows.Shows, o)
 
 		if s == nil {
-			fmt.Printf("Could not find show: %s\n", o.Title)
+			cmd.PrintErrf("Could not find show: %s\n", o.Title)
 			continue
 		}
 

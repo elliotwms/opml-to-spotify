@@ -15,6 +15,7 @@ func TestImport(t *testing.T) {
 			the_command_is_run()
 
 		then.
-			the_user_is_subscribed_to_the_show()
+			the_user_is_subscribed_to_the_show().and().
+			no_errors_are_output()
 	})
 }
