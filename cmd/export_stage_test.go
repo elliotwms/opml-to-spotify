@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/zmb3/spotify/v2"
 	"net/http"
 	"os"
@@ -22,16 +23,18 @@ func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 		cmd:           exportCmd,
 		out:           out,
 		errOut:        err,
+		opmlFilename:  "spotify-" + uuid.NewString() + ".opml",
 		spotifyServer: setupMockSpotify(t),
 		itunesServer:  setupMockItunes(t),
 	}
 
 	exportCmd.SetOut(out)
 	exportCmd.SetErr(err)
+	_ = exportCmd.Flags().Set(flagFile, s.opmlFilename)
 
-	_ = os.Remove("spotify.opml")
+	_ = os.Remove(s.opmlFilename)
 	t.Cleanup(func() {
-		_ = os.Remove("spotify.opml")
+		_ = os.Remove(s.opmlFilename)
 	})
 
 	return s, s, s
@@ -43,6 +46,8 @@ type ExportStage struct {
 	out     *bytes.Buffer
 	errOut  *bytes.Buffer
 	cmd     *cobra.Command
+
+	opmlFilename string
 
 	spotifyServer, itunesServer *http.ServeMux
 
@@ -116,14 +121,14 @@ func (s *ExportStage) the_command_is_run() {
 
 func (s *ExportStage) the_output_opml_file_is_created() *ExportStage {
 	var err error
-	s.opml, err = os.ReadFile("spotify.opml")
+	s.opml, err = os.ReadFile(s.opmlFilename)
 	s.require.NoError(err, "Command should create spotify.opml file")
 
 	return s
 }
 
 func (s *ExportStage) the_output_opml_file_is_not_created() *ExportStage {
-	_, err := os.ReadFile("spotify.opml")
+	_, err := os.ReadFile(s.opmlFilename)
 	s.require.Error(err, "Command should not create spotify.opml file")
 
 	return s

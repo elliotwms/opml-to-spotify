@@ -21,10 +21,12 @@ var exportCmd = &cobra.Command{
 	Run:   runExport,
 }
 
+const flagFile = "file"
+
 func init() {
 	rootCmd.AddCommand(exportCmd)
 
-	exportCmd.Flags().StringP("file", "f", "spotify.opml", "Name of the file to output generated OPML to")
+	exportCmd.Flags().StringP(flagFile, "f", "spotify.opml", "Name of the file to output generated OPML to")
 }
 
 func runExport(cmd *cobra.Command, _ []string) {
@@ -74,7 +76,7 @@ func runExport(cmd *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	err = os.WriteFile(cmd.Flag("file").Value.String(), bs, 0644)
+	err = os.WriteFile(cmd.Flag(flagFile).Value.String(), bs, 0644)
 	if err != nil {
 		panic(err)
 	}
