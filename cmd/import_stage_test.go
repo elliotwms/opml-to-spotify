@@ -149,10 +149,16 @@ func (s *ImportStage) spotify_will_allow_the_user_to_save_the_shows() *ImportSta
 
 func (s *ImportStage) the_dry_run_flag_is_set() {
 	_ = s.cmd.Flags().Set(flagDryRun, "true")
+	s.t.Cleanup(func() {
+		_ = s.cmd.Flags().Set(flagDryRun, "false")
+	})
 }
 
 func (s *ImportStage) the_missing_flag_is_set() {
 	_ = s.cmd.Flags().Set(flagMissing, "missing.txt")
+	s.t.Cleanup(func() {
+		_ = s.cmd.Flags().Set(flagMissing, "")
+	})
 }
 
 func (s *ImportStage) the_command_is_run() {
