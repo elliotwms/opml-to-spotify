@@ -87,6 +87,7 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 
 // searchSpotifyForOutlines searches the Spotify API for each of the shows specified in the opml outlines by name,
 // returning the first match of each
+// It does not paginate through the search results as the exact match would typically be on the first page
 func searchSpotifyForOutlines(cmd *cobra.Command, ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
 	var shows []spotify.ID
 
