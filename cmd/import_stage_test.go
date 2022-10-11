@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"strings"
@@ -25,6 +26,9 @@ func NewImportStage(t *testing.T) (*ImportStage, *ImportStage, *ImportStage) {
 		out:     out,
 		errOut:  err,
 
+		opmlFilename:    "test-" + uuid.NewString() + ".opml",
+		missingFilename: "missing-" + uuid.NewString() + ".txt",
+
 		spotifyServer: setupMockSpotify(t),
 		itunesServer:  setupMockItunes(t),
 	}
@@ -32,11 +36,11 @@ func NewImportStage(t *testing.T) (*ImportStage, *ImportStage, *ImportStage) {
 	importCmd.SetOut(out)
 	importCmd.SetErr(err)
 
-	_ = os.Remove("test.opml")
-	_ = os.Remove("missing.txt")
+	_ = os.Remove(s.opmlFilename)
+	_ = os.Remove(s.missingFilename)
 	t.Cleanup(func() {
-		_ = os.Remove("test.opml")
-		_ = os.Remove("missing.txt")
+		_ = os.Remove(s.opmlFilename)
+		_ = os.Remove(s.missingFilename)
 	})
 
 	return s, s, s
@@ -48,6 +52,8 @@ type ImportStage struct {
 	out     *bytes.Buffer
 	errOut  *bytes.Buffer
 	cmd     *cobra.Command
+
+	opmlFilename, missingFilename string
 
 	spotifyServer, itunesServer *http.ServeMux
 	savedShows                  []string
@@ -76,7 +82,7 @@ func (s *ImportStage) an_opml_file() *ImportStage {
 		},
 	})
 
-	_ = os.WriteFile("test.opml", bs, 0644)
+	_ = os.WriteFile(s.opmlFilename, bs, 0644)
 
 	return s
 }
@@ -151,14 +157,14 @@ func (s *ImportStage) the_dry_run_flag_is_set() {
 }
 
 func (s *ImportStage) the_missing_flag_is_set() {
-	_ = s.cmd.Flags().Set(flagMissing, "missing.txt")
+	_ = s.cmd.Flags().Set(flagMissing, s.missingFilename)
 	s.t.Cleanup(func() {
 		_ = s.cmd.Flags().Set(flagMissing, "")
 	})
 }
 
 func (s *ImportStage) the_command_is_run() {
-	s.cmd.Run(s.cmd, []string{"test.opml"})
+	s.cmd.Run(s.cmd, []string{s.opmlFilename})
 
 	s.t.Log(s.out.String())
 }
@@ -192,5 +198,5 @@ func (s *ImportStage) the_message_is_output(v string) *ImportStage {
 }
 
 func (s *ImportStage) the_missing_file_exists() {
-	s.require.FileExists("missing.txt")
+	s.require.FileExists(s.missingFilename)
 }

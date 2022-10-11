@@ -78,6 +78,6 @@ func TestImport_WithMissingFlag(t *testing.T) {
 
 	then.
 		the_user_is_not_subscribed_to_any_shows().and().
-		the_message_is_output("Writing 1 missing show titles to missing.txt").and().
+		the_message_is_output("Writing 1 missing show titles to").and().
 		the_missing_file_exists()
 }
