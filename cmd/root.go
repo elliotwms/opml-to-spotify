@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const flagClientID = "client-id"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "opml-to-spotify",
@@ -19,4 +21,8 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringP(flagClientID, "c", "", "Spotify application Client ID")
 }
