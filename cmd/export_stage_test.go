@@ -13,16 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ExportTest is a wrapper to clean up resources usually created by running the export command
-func ExportTest(t *testing.T, f func()) {
-	_ = os.Remove("spotify.opml")
-	t.Cleanup(func() {
-		_ = os.Remove("spotify.opml")
-	})
-
-	f()
-}
-
 func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 	out, err := new(bytes.Buffer), new(bytes.Buffer)
 
@@ -38,6 +28,11 @@ func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 
 	exportCmd.SetOut(out)
 	exportCmd.SetErr(err)
+
+	_ = os.Remove("spotify.opml")
+	t.Cleanup(func() {
+		_ = os.Remove("spotify.opml")
+	})
 
 	return s, s, s
 }

@@ -15,17 +15,6 @@ import (
 	"github.com/zmb3/spotify/v2"
 )
 
-func ImportTest(t *testing.T, f func()) {
-	_ = os.Remove("test.opml")
-	_ = os.Remove("missing.txt")
-	t.Cleanup(func() {
-		_ = os.Remove("test.opml")
-		_ = os.Remove("missing.txt")
-	})
-
-	f()
-}
-
 func NewImportStage(t *testing.T) (*ImportStage, *ImportStage, *ImportStage) {
 	out, err := new(bytes.Buffer), new(bytes.Buffer)
 
@@ -42,6 +31,13 @@ func NewImportStage(t *testing.T) (*ImportStage, *ImportStage, *ImportStage) {
 
 	importCmd.SetOut(out)
 	importCmd.SetErr(err)
+
+	_ = os.Remove("test.opml")
+	_ = os.Remove("missing.txt")
+	t.Cleanup(func() {
+		_ = os.Remove("test.opml")
+		_ = os.Remove("missing.txt")
+	})
 
 	return s, s, s
 }
