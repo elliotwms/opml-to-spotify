@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSearch(t *testing.T) {
@@ -28,11 +30,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	res, err := client.Search("James O'Brien's Mystery Hour", "GB")
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	if len(res) == 0 {
-		t.Fatal("no results")
-	}
+	require.NoError(t, err)
+	require.Len(t, res, 1)
 }
