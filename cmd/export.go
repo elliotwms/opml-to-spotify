@@ -45,7 +45,7 @@ func runExport(cmd *cobra.Command, _ []string) {
 
 			entry := searchiTunesForMatch(cmd, show)
 			if entry == nil {
-				cmd.Println("Could not match show:", show.Name)
+				cmd.PrintErrf("Could not match show: %s\n", show.Name)
 				continue
 			}
 
@@ -61,6 +61,11 @@ func runExport(cmd *cobra.Command, _ []string) {
 				panic(err)
 			}
 		}
+	}
+
+	if len(outlines) == 0 {
+		cmd.PrintErrf("No shows could be found. Exiting\n")
+		return
 	}
 
 	// build OPML

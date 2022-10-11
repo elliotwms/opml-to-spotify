@@ -25,7 +25,6 @@ func ExportTest(t *testing.T, f func()) {
 
 func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 	out, err := new(bytes.Buffer), new(bytes.Buffer)
-	exportCmd.SetOut(out)
 
 	s := &ExportStage{
 		t:             t,
@@ -36,6 +35,9 @@ func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 		spotifyServer: setupMockSpotify(t),
 		itunesServer:  setupMockItunes(t),
 	}
+
+	exportCmd.SetOut(out)
+	exportCmd.SetErr(err)
 
 	return s, s, s
 }
@@ -76,6 +78,16 @@ func (s *ExportStage) spotify_will_return_one_show() *ExportStage {
 	return s
 }
 
+func (s *ExportStage) spotify_will_return_zero_shows() *ExportStage {
+	s.spotifyServer.HandleFunc("/me/shows", func(w http.ResponseWriter, r *http.Request) {
+		bs, _ := json.Marshal(spotify.SavedShowPage{Shows: []spotify.SavedShow{}})
+
+		_, _ = w.Write(bs)
+	})
+
+	return s
+}
+
 func (s *ExportStage) itunes_will_return_a_match() {
 	s.itunesServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		bs, _ := json.Marshal(itunes.Results{
@@ -92,17 +104,32 @@ func (s *ExportStage) itunes_will_return_a_match() {
 	})
 }
 
+func (s *ExportStage) itunes_will_not_return_a_match() {
+	s.itunesServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		bs, _ := json.Marshal(itunes.Results{ResultsCount: 0, Results: []itunes.Entry{}})
+		_, _ = w.Write(bs)
+	})
+}
+
 func (s *ExportStage) the_command_is_run() {
 	// run the command
 	s.cmd.Run(s.cmd, nil)
 
 	s.t.Log(s.out.String())
+	s.t.Log(s.errOut.String())
 }
 
-func (s *ExportStage) the_output_opml_file_exists() *ExportStage {
+func (s *ExportStage) the_output_opml_file_is_created() *ExportStage {
 	var err error
 	s.opml, err = os.ReadFile("spotify.opml")
 	s.require.NoError(err, "Command should create spotify.opml file")
+
+	return s
+}
+
+func (s *ExportStage) the_output_opml_file_is_not_created() *ExportStage {
+	_, err := os.ReadFile("spotify.opml")
+	s.require.Error(err, "Command should not create spotify.opml file")
 
 	return s
 }
@@ -119,4 +146,8 @@ func (s *ExportStage) the_output_opml_file_contains_the_expected_show() *ExportS
 
 func (s *ExportStage) no_errors_are_output() {
 	s.require.Empty(s.errOut)
+}
+
+func (s *ExportStage) the_error_is_output(m string) {
+	s.require.Contains(s.errOut.String(), m)
 }
