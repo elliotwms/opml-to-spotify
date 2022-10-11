@@ -9,8 +9,8 @@ func TestExport(t *testing.T) {
 		given, when, then := NewExportStage(t)
 
 		given.
-			spotify_returns_one_show().and().
-			itunes_returns_a_match()
+			spotify_will_return_one_show().and().
+			itunes_will_return_a_match()
 
 		when.
 			the_command_is_run()

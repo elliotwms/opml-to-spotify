@@ -1,35 +1,50 @@
 package cmd
 
 import (
+	"github.com/elliotwms/opml-to-spotify/internal/clients"
 	"github.com/elliotwms/opml-to-spotify/internal/clients/itunes"
 	"net/http"
+	"testing"
 
 	"github.com/zmb3/spotify/v2"
 	"net/http/httptest"
 )
 
-func testSpotifyClient(handlers map[string]http.HandlerFunc) (*spotify.Client, *httptest.Server) {
-	s := testClient(handlers)
+func setupMockSpotify(t *testing.T) *http.ServeMux {
+	c, s, mux := testSpotifyClient()
+	clients.Spotify = c
 
-	return spotify.New(s.Client(), spotify.WithBaseURL(s.URL+"/")), s
+	t.Cleanup(s.Close)
+
+	return mux
 }
 
-func testiTunesClient(handlers map[string]http.HandlerFunc) (*itunes.Client, *httptest.Server) {
-	s := testClient(handlers)
+func setupMockItunes(t *testing.T) *http.ServeMux {
+	c, s, mux := testiTunesClient()
+	clients.ITunes = c
+
+	t.Cleanup(s.Close)
+
+	return mux
+}
+
+func testSpotifyClient() (*spotify.Client, *httptest.Server, *http.ServeMux) {
+	s, mux := testClient()
+
+	return spotify.New(s.Client(), spotify.WithBaseURL(s.URL+"/")), s, mux
+}
+
+func testiTunesClient() (*itunes.Client, *httptest.Server, *http.ServeMux) {
+	s, mux := testClient()
 
 	return &itunes.Client{
 		HTTPClient: s.Client(),
 		BaseURL:    s.URL,
-	}, s
+	}, s, mux
 }
 
-func testClient(handlers map[string]http.HandlerFunc) *httptest.Server {
+func testClient() (*httptest.Server, *http.ServeMux) {
 	mux := http.NewServeMux()
 
-	for path, handlerFunc := range handlers {
-		mux.HandleFunc(path, handlerFunc)
-	}
-
-	s := httptest.NewServer(mux)
-	return s
+	return httptest.NewServer(mux), mux
 }

@@ -3,16 +3,14 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/zmb3/spotify/v2"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/elliotwms/opml-to-spotify/internal/clients"
 	"github.com/elliotwms/opml-to-spotify/internal/clients/itunes"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"github.com/zmb3/spotify/v2"
 )
 
 // ExportTest is a wrapper to clean up resources usually created by running the export command
@@ -30,10 +28,12 @@ func NewExportStage(t *testing.T) (*ExportStage, *ExportStage, *ExportStage) {
 	exportCmd.SetOut(out)
 
 	s := &ExportStage{
-		t:       t,
-		require: require.New(t),
-		cmd:     exportCmd,
-		out:     out,
+		t:             t,
+		require:       require.New(t),
+		cmd:           exportCmd,
+		out:           out,
+		spotifyServer: setupMockSpotify(t),
+		itunesServer:  setupMockItunes(t),
 	}
 
 	return s, s, s
@@ -44,59 +44,56 @@ type ExportStage struct {
 	require *require.Assertions
 	out     *bytes.Buffer
 	cmd     *cobra.Command
-	opml    []byte
+
+	spotifyServer, itunesServer *http.ServeMux
+
+	opml []byte
 }
 
 func (s *ExportStage) and() *ExportStage {
 	return s
 }
-func (s *ExportStage) spotify_returns_one_show() *ExportStage {
-	var server *httptest.Server
-	clients.Spotify, server = testSpotifyClient(map[string]http.HandlerFunc{
-		"/me/shows": func(w http.ResponseWriter, r *http.Request) {
-			bs, _ := json.Marshal(spotify.SavedShowPage{Shows: []spotify.SavedShow{
-				{
-					FullShow: spotify.FullShow{
-						SimpleShow: spotify.SimpleShow{
-							Name:             "Hello, World!",
-							AvailableMarkets: []string{"GB"},
-						},
-						Episodes: spotify.SimpleEpisodePage{},
+func (s *ExportStage) spotify_will_return_one_show() *ExportStage {
+	s.spotifyServer.HandleFunc("/me/shows", func(w http.ResponseWriter, r *http.Request) {
+		bs, _ := json.Marshal(spotify.SavedShowPage{Shows: []spotify.SavedShow{
+			{
+				FullShow: spotify.FullShow{
+					SimpleShow: spotify.SimpleShow{
+						Name:             "Hello, World!",
+						AvailableMarkets: []string{"GB"},
 					},
+					Episodes: spotify.SimpleEpisodePage{},
 				},
-			}})
+			},
+		}})
 
-			_, _ = w.Write(bs)
-		},
+		_, _ = w.Write(bs)
 	})
-	s.t.Cleanup(server.Close)
 
 	return s
 }
 
-func (s *ExportStage) itunes_returns_a_match() {
-	var server *httptest.Server
-	clients.ITunes, server = testiTunesClient(map[string]http.HandlerFunc{
-		"/search": func(w http.ResponseWriter, r *http.Request) {
-			bs, _ := json.Marshal(itunes.Results{
-				ResultsCount: 1,
-				Results: []itunes.Entry{
-					{
-						TrackName: r.URL.Query().Get("term"),
-						FeedURL:   "https://rss.hello.world",
-					},
+func (s *ExportStage) itunes_will_return_a_match() {
+	s.itunesServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		bs, _ := json.Marshal(itunes.Results{
+			ResultsCount: 1,
+			Results: []itunes.Entry{
+				{
+					TrackName: r.URL.Query().Get("term"),
+					FeedURL:   "https://rss.hello.world",
 				},
-			})
+			},
+		})
 
-			_, _ = w.Write(bs)
-		},
+		_, _ = w.Write(bs)
 	})
-	s.t.Cleanup(server.Close)
 }
 
 func (s *ExportStage) the_command_is_run() {
 	// run the command
-	s.cmd.Run(exportCmd, nil)
+	s.cmd.Run(s.cmd, nil)
+
+	s.t.Log(s.out.String())
 }
 
 func (s *ExportStage) the_output_opml_file_exists() *ExportStage {
