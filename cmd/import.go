@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	"github.com/elliotwms/opml-to-spotify/internal/clients"
 	"github.com/gilliek/go-opml/opml"
@@ -10,6 +12,7 @@ import (
 )
 
 const flagDryRun = "dry-run"
+const flagMissing = "missing"
 
 const maxSaveShowsBatchSize = 50
 
@@ -33,6 +36,7 @@ func init() {
 	rootCmd.AddCommand(importCmd)
 
 	importCmd.Flags().BoolP(flagDryRun, "d", false, "Read-only, will not update your subscriptions")
+	importCmd.Flags().StringP(flagMissing, "m", "", "Specify a filename to output missing entries to")
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -50,7 +54,7 @@ func run(cmd *cobra.Command, args []string) {
 	cmd.Printf("Searching for %d shows\n", len(outlines))
 
 	ctx := context.Background()
-	shows, err := searchSpotifyForOutlines(cmd, ctx, client, outlines)
+	shows, missing, err := searchSpotifyForOutlines(cmd, ctx, client, outlines)
 	if err != nil {
 		panic(err)
 	}
@@ -60,6 +64,10 @@ func run(cmd *cobra.Command, args []string) {
 	if cmd.Flag(flagDryRun).Value.String() == "true" {
 		cmd.Printf("Dry-run. Exiting...\n")
 		return
+	}
+
+	if filename := cmd.Flag(flagMissing).Value.String(); len(missing) > 0 && filename != "" {
+		writeMissingFile(cmd, filename, missing)
 	}
 
 	// save shows for current user in batches of maxSaveShowsBatchSize
@@ -72,6 +80,15 @@ func run(cmd *cobra.Command, args []string) {
 		if err = client.SaveShowsForCurrentUser(ctx, shows[i:j]); err != nil {
 			panic(err)
 		}
+	}
+}
+
+func writeMissingFile(cmd *cobra.Command, v string, missing []string) {
+	cmd.Printf("Writing %d missing show titles to %s\n", len(missing), v)
+
+	err := os.WriteFile(v, []byte(strings.Join(missing, "\n")), 0644)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -88,27 +105,29 @@ func getOutlines(filename string) ([]opml.Outline, error) {
 // searchSpotifyForOutlines searches the Spotify API for each of the shows specified in the opml outlines by name,
 // returning the first match of each
 // It does not paginate through the search results as the exact match would typically be on the first page
-func searchSpotifyForOutlines(cmd *cobra.Command, ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, error) {
+func searchSpotifyForOutlines(cmd *cobra.Command, ctx context.Context, client *spotify.Client, outlines []opml.Outline) ([]spotify.ID, []string, error) {
 	var shows []spotify.ID
+	var missing []string
 
 	for _, o := range outlines {
 		cmd.Printf("Searching for %s\n", o.Title)
 		res, err := client.Search(ctx, o.Title, spotify.SearchTypeShow)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		s := findShow(res.Shows.Shows, o)
 
 		if s == nil {
 			cmd.PrintErrf("Could not find show: %s\n", o.Title)
+			missing = append(missing, o.Title)
 			continue
 		}
 
 		shows = append(shows, s.ID)
 	}
 
-	return shows, nil
+	return shows, missing, nil
 }
 
 // findShow finds the first show in the list
