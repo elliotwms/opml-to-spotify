@@ -39,5 +39,5 @@ func TestVerifier_Challenge(t *testing.T) {
 	// values from https://www.oauth.com/playground/authorization-code-with-pkce.html
 	v := Verifier("6mk7z_YTkAjaxUbx06ro9rEx30EeKZtMm3s1u-EZL_KULH4Y")
 
-	require.Equal(t, "6PUMCbtSovfEx9UxUIyi3qpbNImUYZ4cqIiqh0ggbqI", v.Challenge())
+	require.EqualValues(t, "6PUMCbtSovfEx9UxUIyi3qpbNImUYZ4cqIiqh0ggbqI", v.Challenge())
 }

@@ -107,12 +107,14 @@ func (s *ExportStage) the_output_opml_file_exists() *ExportStage {
 	return s
 }
 
-func (s *ExportStage) the_output_opml_file_contains_the_expected_show() {
+func (s *ExportStage) the_output_opml_file_contains_the_expected_show() *ExportStage {
 	if len(s.opml) == 0 {
 		panic("called before file read")
 	}
 
 	s.require.Contains(string(s.opml), "Hello, World!")
+
+	return s
 }
 
 func (s *ExportStage) no_errors_are_output() {

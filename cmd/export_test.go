@@ -17,6 +17,7 @@ func TestExport(t *testing.T) {
 
 		then.
 			the_output_opml_file_exists().and().
-			the_output_opml_file_contains_the_expected_show()
+			the_output_opml_file_contains_the_expected_show().and().
+			no_errors_are_output()
 	})
 }
